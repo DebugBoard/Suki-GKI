@@ -45,11 +45,11 @@ on:
         required: true
         type: boolean
         default: true
-      BBG:                               # ✅ Add this input
+      BBG:                               
         description: '是否启用BBG保护？(启用内核层面防写保护)'
         required: true
         type: boolean
-        default: false
+        default: true
 
 jobs:
   build-kernel-a14-6-1:
