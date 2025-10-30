@@ -29,19 +29,19 @@ on:
         required: true
         type: choice
         options:
-        - Official
-        - Next
-        - MKSU
-        - SukiSU
+          - Official
+          - Next
+          - MKSU
+          - SukiSU
         default: SukiSU
       kernelsu_branch:
         description: "Select KSU branch"
         required: true
         type: choice
         options:
-        - Stable(标准)
-        - Dev(开发)
-        - Other(其他/指定)
+          - Stable(标准)
+          - Dev(开发)
+          - Other(其他/指定)
         default: Stable(标准)
       version:
         description: 'Custom version name (e.g., characters after 5.10.198 / leave blank to use default version number)'
@@ -59,6 +59,11 @@ on:
         default: true
       BBG:
         description: "是否启用内核层面阻止对关键分区/设备节点的非法写入(LSM)？"
+        required: true
+        type: boolean
+        default: false
+      supp_op:
+        description: '是否支持一加8E平台？'
         required: true
         type: boolean
         default: false
@@ -87,6 +92,7 @@ jobs:
       version: ${{ inputs.version }}
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
+      supp_op: ${{ inputs.supp_op }}
       BBG: ${{ inputs.BBG }}
 
   build-kernel-a13-5-10:
@@ -100,6 +106,7 @@ jobs:
       version: ${{ inputs.version }}
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
+      supp_op: ${{ inputs.supp_op }}
       BBG: ${{ inputs.BBG }}
 
   build-kernel-a13-5-15:
@@ -113,6 +120,7 @@ jobs:
       version: ${{ inputs.version }}
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
+      supp_op: ${{ inputs.supp_op }}
       BBG: ${{ inputs.BBG }}
 
   build-kernel-a14-5-15:
@@ -126,6 +134,7 @@ jobs:
       version: ${{ inputs.version }}
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
+      supp_op: ${{ inputs.supp_op }}
       BBG: ${{ inputs.BBG }}
 
   build-kernel-a14-6-1:
@@ -139,6 +148,7 @@ jobs:
       version: ${{ inputs.version }}
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
+      supp_op: ${{ inputs.supp_op }}
       BBG: ${{ inputs.BBG }}
 
   build-kernel-a15-6-6:
@@ -152,6 +162,7 @@ jobs:
       version: ${{ inputs.version }}
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
+      supp_op: ${{ inputs.supp_op }}
       BBG: ${{ inputs.BBG }}
 
   check-build-status:
@@ -553,13 +564,14 @@ jobs:
           
       - name: Create GitHub Release
         if: ${{ steps.release_check.outcome == 'success' }}
-        uses: actions/create-release@v1
-        with:
-          tag_name: ${{ env.NEW_TAG }}
-          prerelease: true
-          release_name: ${{ env.RELEASE_NAME }}
-          body: ${{ env.FULL_RELEASE_NOTES }}
-          token: ${{ secrets.MY_GITHUB_TOKEN }}
+        env:
+          GH_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ env.NEW_TAG }}" \
+            --title "${{ env.RELEASE_NAME }}" \
+            --notes "${{ env.FULL_RELEASE_NOTES }}" \
+            --prerelease \
+            --repo "$REPO_OWNER/$REPO_NAME"
           
       - name: Upload Release Assets
         if: ${{ steps.release_check.outcome == 'success' }}
@@ -582,15 +594,19 @@ jobs:
           echo "Uploaded assets:"
           gh release view "${{ env.NEW_TAG }}" --json assets -q '.assets[].name'
 
-      - name: send telegram message on push
+      - name: Send Telegram notification
+        if: ${{ steps.release_check.outcome == 'success' }}
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TELEGRAM_MESSAGE_THREAD_ID: ${{ secrets.TELEGRAM_MESSAGE_THREAD_ID }}
         run: |
+          if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
+            MESSAGE="Latest release: https://github.com/ShirkNeko/GKI_KernelSU_SUSFS/releases/tag/${{ env.NEW_TAG }}"
             curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
-            -d "chat_id=$TELEGRAM_CHAT_ID" \
-            -d "message_thread_id=$TELEGRAM_MESSAGE_THREAD_ID" \
-            -d "text=Latest release: 
-            https://github.com/ShirkNeko/GKI_KernelSU_SUSFS/releases/tag/${{ env.NEW_TAG }}
-            ${{ env.RELEASE_NOTES }}"    
+              -d "chat_id=$TELEGRAM_CHAT_ID" \
+              -d "message_thread_id=$TELEGRAM_MESSAGE_THREAD_ID" \
+              -d "text=$MESSAGE"
+          else
+            echo "Telegram credentials not configured, skipping notification"
+          fi
