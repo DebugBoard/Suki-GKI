@@ -664,34 +664,45 @@ jobs:
           # Create gzip of the Image file
           gzip -n -k -f -9 ./Image > ./Image.gz
 
-      - name: 创建不同格式的ZIP文件
+      - name: 设置输出文件命名格式
         run: |
-          echo "Creating zip files for all formats..."
-          cd ./AnyKernel3
-
           # Determine naming format based on custom version
           if [ -n "${{ inputs.version }}" ]; then
             # Custom version provided - use new naming format
             BASE_NAME="SukiSU-Kernel-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.version }}"
           else
             # No custom version - use default naming format
-            BASE_NAME="${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-AnyKernel3"
+            BASE_NAME="${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}"
+          fi
+          echo "BASE_NAME=$BASE_NAME" >> $GITHUB_ENV
+          echo "Output files will be named: $BASE_NAME"
+
+      - name: 创建不同格式的ZIP文件
+        run: |
+          echo "Creating zip files for all formats..."
+          cd ./AnyKernel3
+
+          # Use BASE_NAME from environment, add AnyKernel3 suffix for default naming
+          if [ -n "${{ inputs.version }}" ]; then
+            ZIP_BASE_NAME="${BASE_NAME}"
+          else
+            ZIP_BASE_NAME="${BASE_NAME}-AnyKernel3"
           fi
 
           # Create and upload zip for each format
-          ZIP_NAME="${BASE_NAME}.zip"
+          ZIP_NAME="${ZIP_BASE_NAME}.zip"
           echo "Creating zip file: $ZIP_NAME..."
           mv ../Image ./Image
           zip -r "../$ZIP_NAME" ./*
           rm ./Image
 
-          ZIP_NAME="${BASE_NAME}-lz4.zip"
+          ZIP_NAME="${ZIP_BASE_NAME}-lz4.zip"
           echo "Creating zip file: $ZIP_NAME..."
           mv ../Image.lz4 ./Image.lz4
           zip -r "../$ZIP_NAME" ./*
           rm ./Image.lz4
 
-          ZIP_NAME="${BASE_NAME}-gz.zip"
+          ZIP_NAME="${ZIP_BASE_NAME}-gz.zip"
           echo "Creating zip file: $ZIP_NAME..."
           mv ../Image.gz ./Image.gz
           zip -r "../$ZIP_NAME" ./*
@@ -732,15 +743,6 @@ jobs:
           echo "Building Image.gz"
           gzip -n -k -f -9 ./Image > ./Image.gz
 
-          # Determine naming format based on custom version
-          if [ -n "${{ inputs.version }}" ]; then
-            # Custom version provided - use new naming format
-            BASE_NAME="SukiSU-Kernel-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.version }}"
-          else
-            # No custom version - use default naming format
-            BASE_NAME="${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}"
-          fi
-
           echo "Building boot.img"
           $MKBOOTIMG --header_version 4 --kernel Image --output boot.img --ramdisk out/ramdisk --os_version 12.0.0 --os_patch_level "${{ inputs.os_patch_level }}"
           $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image boot.img --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
@@ -763,15 +765,6 @@ jobs:
 
           echo "Building Image.gz"
           gzip -n -k -f -9 ./Image > ./Image.gz
-
-          # Determine naming format based on custom version
-          if [ -n "${{ inputs.version }}" ]; then
-            # Custom version provided - use new naming format
-            BASE_NAME="SukiSU-Kernel-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.version }}"
-          else
-            # No custom version - use default naming format
-            BASE_NAME="${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}"
-          fi
 
           echo "Building boot.img"
           $MKBOOTIMG --header_version 4 --kernel Image --output boot.img
