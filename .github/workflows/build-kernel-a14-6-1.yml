@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       kernelsu_variant:
-        description: "选择 KernelSU"
+        description: "选择 KernelSU | Select KernalSU"
         required: true
         type: choice
         options:
@@ -18,7 +18,7 @@ on:
           - SukiSU
         default: SukiSU
       kernelsu_branch:
-        description: "选择 ksu 分支"
+        description: "选择 ksu 分支 | Select KSU Branch"
         required: true
         type: choice
         options:
@@ -27,21 +27,21 @@ on:
           - Other(其他/指定)
         default: Dev(开发)
       version:
-        description: '自定义版本名(如6.1.93后面的字符/留空则使用默认版本号)'
+        description: '自定义版本名(如6.1.93后面的字符/留空则使用默认版本号) | Custom Kernal Version Name (Eg. 6.1.93customname)'
         required: false
         type: string
       use_zram:
-        description: '是否开启增加更多ZRAM算法?'
+        description: '是否开启增加更多ZRAM算法? | Add ZRAM Algorithms?'
         required: true
         type: boolean
         default: true
       use_kpm:
-        description: '是否开启KPM功能?'
+        description: '是否开启KPM功能? | Apply KPM Patch?'
         required: true
         type: boolean
         default: true
       get_manager:
-        description: '是否同时获取最新KSU管理器?（实验性功能，报错请关闭）'
+        description: '是否同时获取最新KSU管理器?（实验性功能，报错请关闭) | Fetch Latest Manager (Experimental, Disable if fails)?'
         required: true
         type: boolean
         default: true
